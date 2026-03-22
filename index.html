@@ -426,7 +426,8 @@
                 <h4>Windows</h4>
                 <ol>
                     <li>Download <code>Amplitron-Windows-Setup.exe</code></li>
-                    <li>Run the installer &mdash; follow the setup wizard</li>
+                    <li>Run the installer &mdash; if SmartScreen appears, click <strong>&ldquo;More info&rdquo;</strong> then <strong>&ldquo;Run anyway&rdquo;</strong></li>
+                    <li>Follow the setup wizard</li>
                     <li>Launch from the <strong>Start Menu</strong> or <strong>Desktop shortcut</strong></li>
                     <li>Connect your guitar interface and start playing!</li>
                 </ol>
@@ -439,11 +440,14 @@
                 <h4>macOS</h4>
                 <ol>
                     <li>Download <code>Amplitron-macOS.dmg</code></li>
-                    <li>Open the disk image</li>
-                    <li>Drag <strong>Amplitron</strong> to the <strong>Applications</strong> folder</li>
-                    <li>Right-click and select &ldquo;Open&rdquo; (first time only, to bypass Gatekeeper)</li>
+                    <li>Open the disk image and drag <strong>Amplitron</strong> to <strong>Applications</strong></li>
+                    <li><strong>First launch</strong>: Right-click the app &rarr; select <strong>&ldquo;Open&rdquo;</strong> &rarr; click <strong>&ldquo;Open&rdquo;</strong> in the dialog</li>
                     <li>Grant microphone permissions when prompted</li>
                 </ol>
+                <p style="margin-top: 12px; font-size: 0.85rem; color: var(--text-dim);">
+                    If macOS says the app is damaged, open Terminal and run:<br>
+                    <code>xattr -cr /Applications/Amplitron.app</code>
+                </p>
             </div>
 
             <div class="install-steps">
