@@ -9,6 +9,7 @@
 #include "audio/effects/reverb.h"
 #include "audio/effects/cabinet_sim.h"
 #include "audio/effects/amp_simulator.h"
+#include "audio/effects/tuner.h"
 #include <cstring>
 #include <cmath>
 
@@ -84,6 +85,9 @@ TEST(effect_has_name) {
 
     AmpSimulator amp;
     ASSERT_TRUE(std::strcmp(amp.name(), "Amp Sim") == 0);
+
+    TunerPedal tuner;
+    ASSERT_TRUE(std::strcmp(tuner.name(), "Tuner") == 0);
 }
 
 TEST(effect_has_params) {
@@ -364,6 +368,162 @@ TEST(amp_simulator_get_models_returns_at_least_three) {
     }
 }
 
+// ============================================================
+// Tuner pitch detection tests
+// ============================================================
+
+// Helper: feed a sine wave through the tuner and return detected frequency
+static float tuner_detect_freq(float target_freq, int sample_rate = 48000) {
+    TunerPedal tuner;
+    tuner.set_sample_rate(sample_rate);
+    tuner.reset();
+    // Disable mute so we can also verify pass-through
+    tuner.params()[0].value = 0.0f;
+
+    // Generate enough sine wave data to fill the YIN buffer multiple times
+    // and trigger at least one detection update
+    const int total_samples = sample_rate; // 1 second of audio
+    const int chunk_size = 256;
+    float buf[256];
+
+    for (int offset = 0; offset < total_samples; offset += chunk_size) {
+        for (int i = 0; i < chunk_size; ++i) {
+            buf[i] = 0.8f * std::sin(2.0f * 3.14159265f * target_freq * (offset + i) / sample_rate);
+        }
+        tuner.process(buf, chunk_size);
+    }
+
+    return tuner.detected_freq.load();
+}
+
+TEST(tuner_detects_E2) {
+    // E2 = 82.41 Hz (low E string)
+    float freq = tuner_detect_freq(82.41f);
+    ASSERT_GT(freq, 0.0f);
+    // Within +/- 2 cents = +/- 0.095 Hz at 82.41 Hz
+    float cents_err = std::fabs(1200.0f * std::log2(freq / 82.41f));
+    ASSERT_LT(cents_err, 2.0f);
+}
+
+TEST(tuner_detects_A2) {
+    // A2 = 110.0 Hz (A string)
+    float freq = tuner_detect_freq(110.0f);
+    ASSERT_GT(freq, 0.0f);
+    float cents_err = std::fabs(1200.0f * std::log2(freq / 110.0f));
+    ASSERT_LT(cents_err, 2.0f);
+}
+
+TEST(tuner_detects_D3) {
+    // D3 = 146.83 Hz (D string)
+    float freq = tuner_detect_freq(146.83f);
+    ASSERT_GT(freq, 0.0f);
+    float cents_err = std::fabs(1200.0f * std::log2(freq / 146.83f));
+    ASSERT_LT(cents_err, 2.0f);
+}
+
+TEST(tuner_detects_G3) {
+    // G3 = 196.0 Hz (G string)
+    float freq = tuner_detect_freq(196.0f);
+    ASSERT_GT(freq, 0.0f);
+    float cents_err = std::fabs(1200.0f * std::log2(freq / 196.0f));
+    ASSERT_LT(cents_err, 2.0f);
+}
+
+TEST(tuner_detects_B3) {
+    // B3 = 246.94 Hz (B string)
+    float freq = tuner_detect_freq(246.94f);
+    ASSERT_GT(freq, 0.0f);
+    float cents_err = std::fabs(1200.0f * std::log2(freq / 246.94f));
+    ASSERT_LT(cents_err, 2.0f);
+}
+
+TEST(tuner_detects_E4) {
+    // E4 = 329.63 Hz (high E string)
+    float freq = tuner_detect_freq(329.63f);
+    ASSERT_GT(freq, 0.0f);
+    float cents_err = std::fabs(1200.0f * std::log2(freq / 329.63f));
+    ASSERT_LT(cents_err, 2.0f);
+}
+
+TEST(tuner_note_names_correct) {
+    ASSERT_TRUE(std::strcmp(TunerPedal::note_name(0), "C") == 0);
+    ASSERT_TRUE(std::strcmp(TunerPedal::note_name(4), "E") == 0);
+    ASSERT_TRUE(std::strcmp(TunerPedal::note_name(9), "A") == 0);
+    ASSERT_TRUE(std::strcmp(TunerPedal::note_name(11), "B") == 0);
+    ASSERT_TRUE(std::strcmp(TunerPedal::note_name(-1), "?") == 0);
+}
+
+TEST(tuner_maps_note_and_octave) {
+    // Feed A4 (440 Hz) and check note=A(9), octave=4, cents~0
+    TunerPedal tuner;
+    tuner.set_sample_rate(48000);
+    tuner.reset();
+
+    const int total = 48000;
+    const int chunk = 256;
+    float buf[256];
+    for (int off = 0; off < total; off += chunk) {
+        for (int i = 0; i < chunk; ++i)
+            buf[i] = 0.8f * std::sin(2.0f * 3.14159265f * 440.0f * (off + i) / 48000.0f);
+        tuner.process(buf, chunk);
+    }
+
+    ASSERT_TRUE(tuner.signal_detected.load());
+    ASSERT_EQ(tuner.detected_note.load(), 9);   // A
+    ASSERT_EQ(tuner.detected_octave.load(), 4);  // octave 4
+    ASSERT_LT(std::fabs(tuner.detected_cents.load()), 2.0f);
+}
+
+TEST(tuner_mute_zeroes_output) {
+    TunerPedal tuner;
+    tuner.set_sample_rate(48000);
+    tuner.reset();
+    // Mute on (default)
+    tuner.params()[0].value = 1.0f;
+
+    float buf[256];
+    fill_sine(buf, 256, 440.0f, 48000);
+    tuner.process(buf, 256);
+
+    // Output should be silenced
+    float out_rms = rms(buf, 256);
+    ASSERT_LT(out_rms, 1e-10f);
+}
+
+TEST(tuner_pass_through_when_unmuted) {
+    TunerPedal tuner;
+    tuner.set_sample_rate(48000);
+    tuner.reset();
+    // Mute off
+    tuner.params()[0].value = 0.0f;
+
+    float buf[256];
+    fill_sine(buf, 256, 440.0f, 48000);
+    float in_rms = rms(buf, 256);
+    tuner.process(buf, 256);
+    float out_rms = rms(buf, 256);
+
+    // Signal should pass through unchanged
+    ASSERT_NEAR(out_rms, in_rms, 1e-6f);
+}
+
+TEST(tuner_no_detection_on_silence) {
+    TunerPedal tuner;
+    tuner.set_sample_rate(48000);
+    tuner.reset();
+
+    float buf[256];
+    std::memset(buf, 0, sizeof(buf));
+    for (int i = 0; i < 200; ++i)
+        tuner.process(buf, 256);
+
+    ASSERT_FALSE(tuner.signal_detected.load());
+}
+
+// ============================================================
+// Aggregate effect tests (including Tuner)
+// ============================================================
+
 TEST(all_effects_handle_silence) {
     std::vector<std::shared_ptr<Effect>> effects = {
         std::make_shared<NoiseGate>(),
@@ -376,6 +536,7 @@ TEST(all_effects_handle_silence) {
         std::make_shared<Reverb>(),
         std::make_shared<CabinetSim>(),
         std::make_shared<AmpSimulator>(),
+        std::make_shared<TunerPedal>(),
     };
 
     float buf[256];
@@ -400,6 +561,7 @@ TEST(all_effects_reset_without_crash) {
         std::make_shared<Reverb>(),
         std::make_shared<CabinetSim>(),
         std::make_shared<AmpSimulator>(),
+        std::make_shared<TunerPedal>(),
     };
 
     for (auto& fx : effects) {
@@ -430,6 +592,7 @@ TEST(all_effects_handle_different_sample_rates) {
         std::make_shared<Reverb>(),
         std::make_shared<CabinetSim>(),
         std::make_shared<AmpSimulator>(),
+        std::make_shared<TunerPedal>(),
     };
 
     float buf[256];

@@ -106,6 +106,7 @@ set(APP_SOURCES
     src/audio/effects/compressor.cpp
     src/audio/effects/cabinet_sim.cpp
     src/audio/effects/amp_simulator.cpp
+    src/audio/effects/tuner.cpp
     src/gui/gui_manager.cpp
     src/gui/spectrum_analyzer.cpp
     src/gui/pedal_board.cpp
@@ -241,6 +242,7 @@ else() # NOT EMSCRIPTEN
         src/audio/effects/compressor.cpp
         src/audio/effects/cabinet_sim.cpp
         src/audio/effects/amp_simulator.cpp
+        src/audio/effects/tuner.cpp
     )
 
     add_executable(amplitron-tests ${TEST_SOURCES} ${CORE_SOURCES})

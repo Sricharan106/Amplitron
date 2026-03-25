@@ -48,6 +48,24 @@ void AudioEngine::restore_effects_state(std::vector<std::shared_ptr<Effect>> new
     }
 }
 
+void AudioEngine::set_tuner_tap(std::shared_ptr<Effect> tap) {
+    std::lock_guard<std::mutex> lock(effect_mutex_);
+    tuner_tap_ = std::move(tap);
+    if (tuner_tap_) {
+        tuner_tap_->set_sample_rate(sample_rate_);
+        tuner_tap_->reset();
+    }
+}
+
+void AudioEngine::clear_tuner_tap() {
+    std::lock_guard<std::mutex> lock(effect_mutex_);
+    tuner_tap_.reset();
+}
+
+bool AudioEngine::has_tuner_tap() const {
+    return tuner_tap_ != nullptr;
+}
+
 void AudioEngine::move_effect(int from, int to) {
     std::lock_guard<std::mutex> lock(effect_mutex_);
     int n = static_cast<int>(effects_.size());
@@ -161,6 +179,10 @@ void AudioEngine::process_audio(const float* input, float* output, int frame_cou
     // Structural changes (add/remove/move) still use try_lock for safety;
     // parameter changes are fully lock-free via the SPSC queue above.
     if (effect_mutex_.try_lock()) {
+        // Tuner tap: pre-chain pitch detection, optionally mutes signal
+        if (tuner_tap_ && tuner_tap_->is_enabled()) {
+            tuner_tap_->process(process_buffer_.data(), frame_count);
+        }
         for (auto& fx : effects_) {
             if (fx->is_enabled()) {
                 fx->process(process_buffer_.data(), frame_count);

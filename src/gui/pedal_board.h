@@ -33,16 +33,26 @@ public:
     /** @brief Recreate PedalWidget instances from the current engine effect list. */
     void rebuild_widgets();
 
+    /** @brief Whether only enabled pedals are shown (default true). */
+    bool show_active_only() const { return show_active_only_; }
+
 private:
     /** @brief Render the "+ Add Pedal" button and its popup menu. */
     void render_add_pedal_menu();
 
+    /** @brief Render the amp model selector dropdown. */
+    void render_amp_selector();
+
     /** @brief Render the signal flow line, pedal widgets, and drag-and-drop targets. */
     void render_signal_chain();
+
+    /** @brief Find the index of the current AmpSimulator in the effect chain (-1 if none). */
+    int find_amp_index() const;
 
     AudioEngine& engine_;
     CommandHistory& history_;
     std::vector<std::unique_ptr<PedalWidget>> widgets_;
+    bool show_active_only_ = true;
 };
 
 } // namespace GuitarAmp

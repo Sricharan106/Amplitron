@@ -239,6 +239,21 @@ public:
     Recorder& recorder() { return recorder_; }
 
     /**
+     * @brief Set a tuner tap that receives pre-chain audio each callback.
+     *
+     * The tap is processed before the effect chain. If its mute param is
+     * active it will zero the buffer, silencing the downstream chain.
+     * Protected by effect_mutex_.
+     */
+    void set_tuner_tap(std::shared_ptr<Effect> tap);
+
+    /** @brief Remove the tuner tap. */
+    void clear_tuner_tap();
+
+    /** @brief Return true if a tuner tap is currently installed. */
+    bool has_tuner_tap() const;
+
+    /**
      * @brief Run the DSP pipeline on a block of audio samples.
      *
      * Called by the platform backend's audio callback. Public so that
@@ -273,6 +288,7 @@ private:
     std::vector<float> process_buffer_;
     std::mutex effect_mutex_;
     Recorder recorder_;
+    std::shared_ptr<Effect> tuner_tap_;
     std::string last_error_;
 
     // Lock-free GUI -> Audio command queue (256 slots)

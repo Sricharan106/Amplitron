@@ -5,6 +5,7 @@
 #include "preset_manager.h"
 #include "gui/command_history.h"
 #include "gui/spectrum_analyzer.h"
+#include "audio/effects/tuner.h"
 
 struct SDL_Window;
 typedef void* SDL_GLContext;
@@ -84,6 +85,9 @@ private:
     /** @brief Render the collapsible VU + spectrum analyzer panel. */
     void render_analyzer_panel();
 
+    /** @brief Render the tuner modal dialog. */
+    void render_tuner_modal();
+
     /** @brief Draw a horizontal VU bar with peak hold and clipping flash. */
     void render_vu_bar(const char* id,
                        const char* label,
@@ -113,6 +117,8 @@ private:
     bool show_settings_ = false;
     bool show_save_preset_ = false;
     bool show_load_preset_ = false;
+    bool show_tuner_ = false;
+    std::shared_ptr<TunerPedal> tuner_instance_;
     int window_width_ = 1280;
     int window_height_ = 720;
 

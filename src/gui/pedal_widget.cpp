@@ -2,6 +2,7 @@
 #include "gui/theme.h"
 #include "gui/command.h"
 #include "gui/command_history.h"
+#include "audio/effects/tuner.h"
 #include <cstring>
 #include <cmath>
 
@@ -81,10 +82,136 @@ bool PedalWidget::render() {
             ));
     }
 
-    // Knobs area
+    // --- Tuner custom display ---
+    bool is_tuner = (std::strcmp(effect_->name(), "Tuner") == 0);
+    if (is_tuner) {
+        auto* tuner = dynamic_cast<TunerPedal*>(effect_.get());
+        if (tuner) {
+            float cx = p0.x + pedal_width * 0.5f;
+
+            // Note name (large)
+            bool has_signal = tuner->signal_detected.load(std::memory_order_relaxed);
+            int note_idx = tuner->detected_note.load(std::memory_order_relaxed);
+            int octave = tuner->detected_octave.load(std::memory_order_relaxed);
+            float cents = tuner->detected_cents.load(std::memory_order_relaxed);
+            float freq = tuner->detected_freq.load(std::memory_order_relaxed);
+
+            float display_y = p0.y + 55;
+
+            if (has_signal && note_idx >= 0) {
+                // Note name + octave
+                char note_buf[16];
+                snprintf(note_buf, sizeof(note_buf), "%s%d",
+                         TunerPedal::note_name(note_idx), octave);
+                ImVec2 note_size = ImGui::CalcTextSize(note_buf);
+                // Scale: draw it large by using the draw list directly
+                float note_x = cx - note_size.x * 1.5f;
+                dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 2.0f,
+                    ImVec2(note_x, display_y),
+                    Theme::TEXT_PRIMARY, note_buf);
+
+                display_y += 45;
+
+                // Cents text
+                char cents_buf[32];
+                snprintf(cents_buf, sizeof(cents_buf), "%+.1f cents", cents);
+                ImVec2 cents_text_size = ImGui::CalcTextSize(cents_buf);
+                ImGui::SetCursorScreenPos(ImVec2(cx - cents_text_size.x * 0.5f, display_y));
+                float abs_cents = std::fabs(cents);
+                ImVec4 cents_col = (abs_cents < 5.0f)
+                    ? ImVec4(0.2f, 0.9f, 0.3f, 1.0f)   // green = in tune
+                    : (abs_cents < 15.0f)
+                        ? ImVec4(0.9f, 0.8f, 0.2f, 1.0f) // yellow
+                        : ImVec4(0.9f, 0.2f, 0.2f, 1.0f); // red = out of tune
+                ImGui::PushStyleColor(ImGuiCol_Text, cents_col);
+                ImGui::TextUnformatted(cents_buf);
+                ImGui::PopStyleColor();
+
+                display_y += 22;
+
+                // Cents deviation bar
+                float bar_w = pedal_width - 30;
+                float bar_h = 10;
+                float bar_x = p0.x + 15;
+                float bar_y = display_y;
+                // Background
+                dl->AddRectFilled(
+                    ImVec2(bar_x, bar_y),
+                    ImVec2(bar_x + bar_w, bar_y + bar_h),
+                    Theme::KNOB_BG, 3.0f);
+                // Center line
+                float center_x = bar_x + bar_w * 0.5f;
+                dl->AddLine(
+                    ImVec2(center_x, bar_y - 1),
+                    ImVec2(center_x, bar_y + bar_h + 1),
+                    Theme::TEXT_DIM, 1.5f);
+                // Needle: cents range [-50, +50] mapped to bar
+                float needle_norm = clamp(cents / 50.0f, -1.0f, 1.0f);
+                float needle_x = center_x + needle_norm * (bar_w * 0.5f);
+                ImU32 needle_col = ImGui::ColorConvertFloat4ToU32(cents_col);
+                dl->AddRectFilled(
+                    ImVec2(needle_x - 3, bar_y - 2),
+                    ImVec2(needle_x + 3, bar_y + bar_h + 2),
+                    needle_col, 2.0f);
+
+                display_y += bar_h + 14;
+
+                // Frequency
+                char freq_buf[32];
+                snprintf(freq_buf, sizeof(freq_buf), "%.1f Hz", freq);
+                ImVec2 freq_size = ImGui::CalcTextSize(freq_buf);
+                ImGui::SetCursorScreenPos(ImVec2(cx - freq_size.x * 0.5f, display_y));
+                ImGui::PushStyleColor(ImGuiCol_Text, Theme::TextSecondary());
+                ImGui::TextUnformatted(freq_buf);
+                ImGui::PopStyleColor();
+
+                display_y += 22;
+            } else {
+                // No signal
+                const char* no_sig = "---";
+                ImVec2 ns_size = ImGui::CalcTextSize(no_sig);
+                dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 2.0f,
+                    ImVec2(cx - ns_size.x * 1.5f, display_y),
+                    Theme::TEXT_DIM, no_sig);
+                display_y += 45;
+
+                const char* waiting = "Play a note...";
+                ImVec2 wt_size = ImGui::CalcTextSize(waiting);
+                ImGui::SetCursorScreenPos(ImVec2(cx - wt_size.x * 0.5f, display_y));
+                ImGui::PushStyleColor(ImGuiCol_Text, Theme::TextDim());
+                ImGui::TextUnformatted(waiting);
+                ImGui::PopStyleColor();
+
+                display_y += 22;
+            }
+
+            // Mute indicator
+            display_y += 8;
+            bool mute_on = effect_->params()[0].value >= 0.5f;
+            const char* mute_label = mute_on ? "[MUTE ON]" : "[MUTE OFF]";
+            ImVec2 ml_size = ImGui::CalcTextSize(mute_label);
+            ImGui::SetCursorScreenPos(ImVec2(cx - ml_size.x * 0.5f, display_y));
+            ImGui::PushStyleColor(ImGuiCol_Text,
+                mute_on ? ImVec4(0.9f, 0.3f, 0.3f, 1.0f) : ImVec4(0.3f, 0.7f, 0.3f, 1.0f));
+            ImGui::TextUnformatted(mute_label);
+            ImGui::PopStyleColor();
+
+            // Clickable area to toggle mute
+            ImGui::SetCursorScreenPos(ImVec2(cx - ml_size.x * 0.5f, display_y));
+            ImGui::InvisibleButton("##tuner_mute_toggle", ml_size);
+            if (ImGui::IsItemClicked()) {
+                effect_->params()[0].value = mute_on ? 0.0f : 1.0f;
+            }
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Click to toggle mute");
+            }
+        }
+    }
+
+    // Knobs area (skip for tuner — it has a custom display above)
     float knob_y_start = p0.y + 55;
     auto& params = effect_->params();
-    int num_params = static_cast<int>(params.size());
+    int num_params = is_tuner ? 0 : static_cast<int>(params.size());
 
     float knob_radius = 20.0f;
     float knob_spacing_x = 85.0f;

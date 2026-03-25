@@ -9,6 +9,7 @@
 #include "audio/effects/reverb.h"
 #include "audio/effects/cabinet_sim.h"
 #include "audio/effects/amp_simulator.h"
+#include "audio/effects/tuner.h"
 
 #include <iostream>
 #include <ctime>
@@ -77,6 +78,7 @@ std::shared_ptr<Effect> PresetManager::create_effect(const std::string& type) {
     if (type == "Reverb")      return std::make_shared<Reverb>();
     if (type == "Cabinet")     return std::make_shared<CabinetSim>();
     if (type == "Amp Sim")     return std::make_shared<AmpSimulator>();
+    if (type == "Tuner")       return std::make_shared<TunerPedal>();
     return nullptr;
 }
 
