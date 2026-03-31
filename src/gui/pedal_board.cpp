@@ -13,6 +13,7 @@
 #include "audio/effects/reverb.h"
 #include "audio/effects/cabinet_sim.h"
 #include "audio/effects/amp_simulator.h"
+#include "audio/effects/wah.h"
 #include <cstring>
 #include <cstdio>
 #include <set>
@@ -190,6 +191,12 @@ void PedalBoard::render_add_pedal_menu() {
         }
         if (ImGui::MenuItem("Reverb")) {
             add_effect_and_show(std::make_shared<Reverb>());
+        }
+
+        ImGui::Separator();
+        ImGui::TextColored(ImVec4(0.30f, 0.75f, 0.60f, 1.0f), "FILTER");
+        if (ImGui::MenuItem("Wah")) {
+            add_effect_and_show(std::make_shared<WahPedal>());
         }
 
         ImGui::Separator();

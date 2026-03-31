@@ -10,6 +10,7 @@
 #include "audio/effects/cabinet_sim.h"
 #include "audio/effects/amp_simulator.h"
 #include "audio/effects/tuner.h"
+#include "audio/effects/wah.h"
 
 #include <iostream>
 #include <ctime>
@@ -79,6 +80,7 @@ std::shared_ptr<Effect> PresetManager::create_effect(const std::string& type) {
     if (type == "Cabinet")     return std::make_shared<CabinetSim>();
     if (type == "Amp Sim")     return std::make_shared<AmpSimulator>();
     if (type == "Tuner")       return std::make_shared<TunerPedal>();
+    if (type == "Wah")         return std::make_shared<WahPedal>();
     return nullptr;
 }
 
