@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)](https://github.com/sudip-mondal-2002/Amplitron/releases)
 
-Professional real-time guitar amplifier simulator with ultra-low latency, 12 studio-quality effects, and a beautiful visual pedal board interface. Available as a native desktop app and a browser-based web demo. Built in C++17 with PortAudio, SDL2, and Dear ImGui.
+Professional real-time guitar amplifier simulator with ultra-low latency, 16 studio-quality effects, and a beautiful visual pedal board interface. Available as a native desktop app and a browser-based web demo. Built in C++17 with PortAudio, SDL2, and Dear ImGui.
 
 <a href="https://www.producthunt.com/products/amplitron?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-amplitron" target="_blank" rel="noopener noreferrer"><img alt="Amplitron - Poor man's guitar amp | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1105240&amp;theme=light&amp;t=1774378395088"></a>
 
@@ -40,6 +40,10 @@ Transform your computer into a complete guitar rig. Plug in your guitar via USB 
 | **Delay** | Up to 2 seconds, with feedback tone filtering |
 | **Reverb** | Schroeder reverb (4 comb + 2 allpass filters) with decay and damping |
 | **Wah** | State-variable filter wah with manual sweep and auto-wah (envelope follower) modes |
+| **Phaser** | Cascaded all-pass filters with LFO modulation (4, 6, 8, or 12 stages) |
+| **Flanger** | Short modulated delay line (0.1–15ms) with feedback for comb filter sweep |
+| **Octaver** | Monophonic sub-octave and upper-octave generator with envelope shaping |
+| **Pitch Shifter** | Pitch shifting by ±12 semitones using granular overlap-add algorithm |
 
 ### Utilities
 | Tool | Description |
@@ -297,7 +301,11 @@ Amplitron/
 │   │       ├── delay.*            # Digital delay with feedback
 │   │       ├── reverb.*           # Schroeder reverb
 │   │       ├── tuner.*            # Chromatic tuner (YIN algorithm)
-│   │       └── wah.*              # Wah (manual sweep + auto-wah)
+│   │       ├── wah.*              # Wah (manual sweep + auto-wah)
+│   │       ├── phaser.*           # Cascaded all-pass filter phaser
+│   │       ├── flanger.*          # Modulated delay flanger
+│   │       ├── octaver.*          # Sub/upper-octave generator
+│   │       └── pitch_shifter.*    # Granular pitch shifting
 │   └── gui/
 │       ├── gui_manager.h/cpp      # Window, ImGui, main render loop
 │       ├── pedal_board.h/cpp      # Pedal chain management UI
@@ -422,7 +430,7 @@ cd build
 
 The test suite includes 105+ tests covering:
 - Core utility functions
-- All 12 audio effects (including amp simulator, wah, and tuner)
+- All 16 audio effects (including amp simulator, wah, tuner, phaser, flanger, octaver, and pitch shifter)
 - Preset save/load/roundtrip
 - WAV recording
 - Theme and color system

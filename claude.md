@@ -74,8 +74,14 @@ Each effect pedal in Amplitron acts as an independent DSP processing agent. They
 
 ### 2.5 Modulation & Filter Agents
 * **`WahPedal` (The Wah Agent):** A state-variable filter (Chamberlin SVF topology) wah effect with two operating modes. In **Manual** mode, the `Sweep` parameter controls the filter's centre frequency directly (heel-down = low, toe-down = high). In **Auto-wah** mode, an internal envelope follower tracks input amplitude and drives the sweep automatically according to `Sensitivity`, `Attack`, and `Release` parameters. One-pole smoothing is applied to both the sweep position and Q value to eliminate zipper noise on rapid knob moves. Uses `try_lock` for non-blocking parameter snapshots in the audio thread.
+* **`Phaser` (The Sweep Agent):** Cascaded 1st-order all-pass filters (4, 6, 8, or 12 stages) modulated by an LFO. Blends the all-pass output with the dry signal to create classic phaser sweep effects. Supports stereo operation with 180° out-of-phase LFO modulation on the right channel for a wide, spatial sweep.
+* **`Flanger` (The Comb Filter Agent):** Short modulated delay line (0.1–15ms) mixed with the dry signal. An LFO sweeps the delay time, and feedback through the delay line creates the characteristic comb filter sweep sound. Stereo operation uses 180° out-of-phase LFO for wide stereo flanging.
 
-### 2.6 Utility Agents
+### 2.6 Pitch & Octave Shift Agents
+* **`Octaver` (The Frequency Divider Agent):** Monophonic octave generator producing sub-octave (Oct-1) and upper-octave (Oct+1) signals blended with the dry input. Oct-1 uses a zero-crossing flip-flop divider producing a square wave at half the input frequency, shaped by the input envelope for warm, organ-like tones. Oct+1 uses full-wave rectification (|x|) to double the fundamental frequency, followed by DC removal and envelope shaping. References: Boss OC-2, EHX Octave Multiplexer.
+* **`PitchShifter` (The Granular Agent):** Pitch shifting by ±12 semitones using a dual-tap granular overlap-add algorithm. Two read pointers scan a circular buffer at rates determined by the pitch ratio, with a raised-cosine (Hann) window crossfade between the two taps to hide grain boundary discontinuities. Controls include Shift (semitones), Fine (cents), and Mix.
+
+### 2.7 Utility Agents
 * **`TunerPedal` (The Pitch Detection Agent):** A chromatic tuner using the YIN pitch detection algorithm. Operates on a 4096-sample circular buffer (~85ms window at 48kHz), providing accurate fundamental frequency detection down to E2 (82.41Hz). Reports detected note name, octave, cent offset, and signal presence via atomic variables for thread-safe GUI display. Updates at ~15Hz to balance responsiveness and CPU usage.
 
 ---
@@ -116,7 +122,7 @@ At the end of any task that meaningfully changes the system architecture, update
 
 ### What to update
 - **Agent descriptions:** Keep the one-line role and bullet responsibilities accurate. Do not pad with implementation details that belong in code comments.
-- **Footer agent counts:** The line `12 DSP effects, 7 system agents` must reflect the actual current counts after every structural addition or removal.
+- **Footer agent counts:** The line showing DSP effects and system agents must reflect the actual current counts after every structural addition or removal.
 - **Section headings:** If a new category of DSP agent is introduced (e.g. a new subsection under Section 2), add it with the same format as existing subsections.
 
 ### How to update
@@ -128,5 +134,5 @@ At the end of any task that meaningfully changes the system architecture, update
 
 ---
 **Maintained by:** [@sudip-mondal-2002](https://github.com/sudip-mondal-2002)
-**Architecture Reference** — 12 DSP effects, 7 system agents
+**Architecture Reference** — 16 DSP effects, 7 system agents
 
