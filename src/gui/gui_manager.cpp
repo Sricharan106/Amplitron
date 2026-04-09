@@ -337,7 +337,7 @@ void GuiManager::render_menu_bar() {
                 gui_presets_.delete_preset_by_index(gui_presets_.selected_preset_index());
             }
             ImGui::Separator();
-#ifndef EMSCRIPTEN
+#ifndef AMPLITRON_NO_DESKTOP_SHELL
             if (ImGui::MenuItem("Change Presets Directory...")) {
                 std::string chosen = show_folder_dialog("Select Presets Directory");
                 if (!chosen.empty()) {

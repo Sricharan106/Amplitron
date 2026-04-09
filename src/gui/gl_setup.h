@@ -11,9 +11,10 @@
 
 // OpenGL ES 3.0 on Web (Emscripten), Android, and iOS.
 // Desktop (Windows / macOS / Linux) uses OpenGL Core 3.3.
-#if defined(__EMSCRIPTEN__) || defined(__ANDROID__) || \
-    (defined(__APPLE__) && defined(TARGET_OS_IOS) && TARGET_OS_IOS)
+#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
 #include <GLES3/gl3.h>
+#elif defined(__APPLE__) && defined(TARGET_OS_IOS) && TARGET_OS_IOS
+#include <OpenGLES/ES3/gl.h>
 #else
 #include <SDL_opengl.h>
 #endif
