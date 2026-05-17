@@ -167,6 +167,7 @@ set(APP_SOURCES
     src/audio/effects/equalizer.cpp
     src/audio/effects/noise_gate.cpp
     src/audio/effects/compressor.cpp
+    src/audio/effects/looper.cpp
     src/audio/effects/cabinet_sim.cpp
     src/audio/effects/ir_cabinet.cpp
     src/audio/effects/amp_simulator.cpp
@@ -518,6 +519,7 @@ else() # NOT EMSCRIPTEN, ANDROID, or IOS
         src/audio/effects/equalizer.cpp
         src/audio/effects/noise_gate.cpp
         src/audio/effects/compressor.cpp
+        src/audio/effects/looper.cpp
         src/audio/effects/cabinet_sim.cpp
         src/audio/effects/ir_cabinet.cpp
         src/audio/effects/amp_simulator.cpp
