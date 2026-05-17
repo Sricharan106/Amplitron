@@ -43,29 +43,25 @@ void GuiSnapshots::recall_slot(int slot) {
 }
 
 void GuiSnapshots::render() {
-    // Scale the baseline bar size based on active font metrics
-    float font_scale = ImGui::GetFontSize() / 14.0f;
-    float bar_height = 42.0f * font_scale;
+    // Scale the baseline bar size based on visual font metrics.
+    // GetFontSize() returns raw pixel size (e.g. 28px on Mac Retina),
+    // multiply by FontGlobalScale to get the visual size used for layout.
+    float visual_font_size = ImGui::GetFontSize() * ImGui::GetIO().FontGlobalScale;
+    float font_scale = visual_font_size / 14.0f;
+    float bar_height = 36.0f * font_scale;
 
-    // FIX: Block scrollbars from displaying if layout configurations shift slightly
     ImGui::BeginChild("SnapshotBar", ImVec2(0, bar_height), true,
                        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-    // =================================================================
-    // COORD TWEAK BUFFER (Adjust this specific value to align text blocks)
-    // =================================================================
-    float text_drop_nudge_y = 4.0f; // Shift only the text blocks down relative to buttons
-    // =================================================================
+    // Vertically center the button row
+    {
+        float avail_y = ImGui::GetContentRegionAvail().y;
+        float row_h   = ImGui::GetFrameHeight();
+        float pad_y   = std::max(0.0f, (avail_y - row_h) * 0.5f);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + pad_y);
+    }
 
-    // 1. Force the row layout cursor directly to your optimal button baseline coordinate
-    ImGui::SetCursorPosY(3.0f);
-
-    // 2. Render the initial SNAPSHOTS text shifted locally down
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + text_drop_nudge_y);
     ImGui::TextColored(Theme::TextSecondary(), "SNAPSHOTS");
-    
-    // 3. Immediately pull the cursor back up so the buttons render at the 3.0f baseline loop
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - text_drop_nudge_y);
 
     for (int i = 0; i < SnapshotManager::NUM_SLOTS; ++i) {
         ImGui::SameLine();
@@ -149,9 +145,7 @@ void GuiSnapshots::render() {
         }
     }
 
-    // 4. Position the info/status text after the buttons using the same offset matrix
     ImGui::SameLine();
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + text_drop_nudge_y);
 
     // Status message or hint text
     if (status_timer_ > 0.0f) {

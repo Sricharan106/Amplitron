@@ -75,11 +75,12 @@ int PedalBoard::find_amp_index() const {
 
 /** @brief Render the toolbar (add/reset) and the scrollable signal chain area. */
 void PedalBoard::render() {
-    // Calculate uniform dynamic height matching snapshot bar
-    float font_scale = ImGui::GetFontSize() / 14.0f;
-    float bar_height = 42.0f * font_scale;
+    // Calculate uniform dynamic height matching snapshot bar.
+    // GetFontSize() returns raw pixel size; multiply by FontGlobalScale to get visual size.
+    float visual_font_size = ImGui::GetFontSize() * ImGui::GetIO().FontGlobalScale;
+    float font_scale = visual_font_size / 14.0f;
+    float bar_height = 40.0f * font_scale;
 
-    // FIX: Enforce uniform styling properties and completely suppress vertical scrollbars
     ImGui::BeginChild("PedalToolbar", ImVec2(0, bar_height), true,
                        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
@@ -103,10 +104,81 @@ void PedalBoard::render() {
     }
     ImGui::SameLine();
 
-    // Amp selector (separate dropdown to switch model)
-    render_amp_selector();
+    render_midi_menu();
     ImGui::SameLine();
 
+    // --- Confirmation Modals ---
+    // OpenPopup must only be called on the transition frame, not every frame.
+    if (show_confirm_reset_) {
+        ImGui::OpenPopup("Confirm Reset##Modal");
+        show_confirm_reset_ = false;
+    }
+    if (show_confirm_clear_) {
+        ImGui::OpenPopup("Confirm Clear##Modal");
+        show_confirm_clear_ = false;
+    }
+
+    if (ImGui::BeginPopupModal("Confirm Reset##Modal", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Are you sure you want to reset ALL parameters to their default values?\nThis will affect every pedal on the board.");
+        ImGui::Separator();
+        if (ImGui::Button("Reset", ImVec2(120, 0))) {
+            history_.execute(std::make_unique<ResetAllCommand>(engine_));
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (ImGui::BeginPopupModal("Confirm Clear##Modal", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Are you sure you want to remove ALL pedals from the signal chain?\nThis cannot be undone easily if you have many complex settings.");
+        ImGui::Separator();
+        if (ImGui::Button("Clear All", ImVec2(120, 0))) {
+            history_.execute(std::make_unique<ClearAllCommand>(engine_));
+            rebuild_widgets();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (show_confirm_midi_clear_) {
+        ImGui::OpenPopup("Confirm MIDI Clear##Modal");
+        show_confirm_midi_clear_ = false;
+    }
+
+    if (ImGui::BeginPopupModal("Confirm MIDI Clear##Modal", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Are you sure you want to clear ALL MIDI CC mappings?");
+        ImGui::TextColored(Theme::Gold(), "This action cannot be undone.");
+        ImGui::Spacing();
+
+        if (ImGui::Button("Clear All", ImVec2(120, 0))) {
+            if (gui_midi_) {
+                gui_midi_->manager().clear_mappings();
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    ImGui::SameLine();
+
+    // Amp selector (separate dropdown to switch model)
+    render_amp_selector();
+
+    ImGui::SameLine();
     int pedal_count = static_cast<int>(engine_.effects().size());
     ImGui::TextColored(Theme::TextSecondary(),
         "  %d effects | Drag knobs to adjust", pedal_count);

@@ -13,9 +13,11 @@ void GuiRecording::render_controls() {
     bool is_paused = rec.is_paused();
     bool has_unsaved = rec.has_unsaved();
 
-    // Dynamically calculate baseline heights using the loaded font scale factor 
-    float font_scale = ImGui::GetFontSize() / 14.0f;
-    float panel_height = is_recording ? (126.0f * font_scale) : (52.0f * font_scale);
+    // Dynamically calculate baseline heights using the visual font scale factor.
+    // GetFontSize() returns raw pixel size; multiply by FontGlobalScale to get visual size.
+    float visual_font_size = ImGui::GetFontSize() * ImGui::GetIO().FontGlobalScale;
+    float font_scale = visual_font_size / 14.0f;
+    float panel_height = is_recording ? (120.0f * font_scale) : (46.0f * font_scale);
 
     // FIX: Enforce fixed-height layout properties with strict scrollbars suppression flags
     ImGui::BeginChild("RecordingPanel", ImVec2(0, panel_height), true,
@@ -217,6 +219,7 @@ void GuiRecording::render_save_dialog(bool& show) {
         return;
     }
 
+    // Launch native save dialog (runs on this frame, blocks briefly)
     recording_save_pending_ = false;
     show = false;
 
