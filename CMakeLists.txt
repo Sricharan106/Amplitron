@@ -486,6 +486,7 @@ else() # NOT EMSCRIPTEN, ANDROID, or IOS
         tests/test_common.cpp
         tests/test_oboe_ring_buffer.cpp
         tests/test_effects.cpp
+        tests/test_looper.cpp
         tests/test_preset_manager.cpp
         tests/test_json_serialization.cpp
         tests/test_recorder.cpp
